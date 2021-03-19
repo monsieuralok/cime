@@ -120,6 +120,7 @@
     <values>
       <value>.false.</value>
       <value BGC_MODE="CO2_DMSA">.true.</value>
+      <value BGC_MODE="CO2_DMSA_VSLSC">.true.</value>
     </values>
   </entry>
 
@@ -137,6 +138,21 @@
     <values>
       <value>.false.</value>
       <value BGC_MODE="CO2_DMSB">.true.</value>
+      <value BGC_MODE="CO2_DMSB_VSLSC">.true.</value>
+    </values>
+  </entry>
+
+  <entry id="flds_vslsc">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If CCSM_BGC is set to 'CO2_DMS*_VSLSC', then flds_vslsc will be set to .true. by default.
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value BGC_MODE="CO2_DMSB_VSLSC">.true.</value>
+      <value BGC_MODE="CO2_DMSA_VSLSC">.true.</value>
     </values>
   </entry>
 

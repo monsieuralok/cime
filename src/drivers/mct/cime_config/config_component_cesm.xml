@@ -147,7 +147,7 @@
 
   <entry id="CCSM_BGC">
     <type>char</type>
-    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA,CO2_DMSB</valid_values>
+    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA,CO2_DMSB,CO2_DMSA_VSLSC,CO2_DMSB_VSLSC</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="_CAM">CO2A</value>
@@ -160,6 +160,8 @@
       <value compset="_BGC%BDRD">CO2C</value>
       <value compset="_BGC%BPRPDMS">CO2_DMSA</value>
       <value compset="_BGC%BDRDDMS">CO2_DMSB</value>
+      <value compset="_BGC%BPRPDMS%VSLSC">CO2_DMSA_VSLSC</value>
+      <value compset="_BGC%BDRDDMS%VSLSC">CO2_DMSB_VSLSC</value>
       <value compset="_BGC%DMS">CO2_DMSB</value>
       <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
@@ -184,7 +186,38 @@
     the atmosphere to the land and ocean, and the surface upward flux of CO2
     to be sent from the land and the open ocean back to the atmosphere.
 
+    VSLSC: sets the driver namelist variable flds_vslsc = .true.; this adds
+    prognostic bromoform at the lowest atm model level to be sent from
+    the atmosphere to the ocean, and the surface upward flux of bromoform
+    to be sent from the open ocean back to the atmosphere.
+
     The namelist variables flds_co2a, flds_co2b and flds_co2c are in the
+    namelist group cpl_flds_inparm.
+    </desc>
+  </entry>
+
+  <entry id="CAM_Nor_BGC">
+    <type>char</type>
+    <valid_values>none,VSLS_CLIM,VSLS_OCN</valid_values>
+    <default_value>none</default_value>
+    <values match="last">
+      <value compset="_VSLSA">VSLS_CLIM</value>
+      <value compset="_VSLSC">VSLS_OCN</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Activates bromoform field to be exchanged between ocean-atmosphere components. Possible values are:
+
+    VSLS_CLIM: sets the driver namelist variable flds_vslsa = .true.; this adds
+    diagnostic (climatology) surface ocean bromoform to be sent ocean to atmosphere
+    (CURRENTLY NOT YET IMPLEMENTED)
+
+    VSLS_OCN: sets the driver namelist variable flds_vslsc = .true.; this adds
+    prognostic bromoform at the lowest atm model level to be sent from
+    the atmosphere to the ocean, and the surface upward flux of bromoform
+    to be sent from the open ocean back to the atmosphere.
+
+    The namelist variables flds_vslsa, flds_vslsc are in the
     namelist group cpl_flds_inparm.
     </desc>
   </entry>
