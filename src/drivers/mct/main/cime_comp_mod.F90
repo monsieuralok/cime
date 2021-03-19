@@ -457,7 +457,7 @@ module cime_comp_mod
   character(CL) :: hist_a2x24hr_flds = &
        'Faxa_bcphiwet:Faxa_bcphodry:Faxa_bcphidry:Faxa_ocphiwet:Faxa_ocphidry:&
        &Faxa_ocphodry:Faxa_dstwet1:Faxa_dstdry1:Faxa_dstwet2:Faxa_dstdry2:Faxa_dstwet3:&
-       &Faxa_dstdry3:Faxa_dstwet4:Faxa_dstdry4:Sa_co2prog:Sa_co2diag'
+       &Faxa_dstdry3:Faxa_dstwet4:Faxa_dstdry4:Sa_co2prog:Sa_co2diag:Sa_vslsprog'
 
   character(CL) :: hist_a2x1hri_flds = &
        'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
@@ -469,7 +469,7 @@ module cime_comp_mod
        'Sa_z:Sa_topo:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
        &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf:&
-       &Sa_co2diag:Sa_co2prog'
+       &Sa_co2diag:Sa_co2prog:Sa_vslsprog'
 
   ! --- other ---
 

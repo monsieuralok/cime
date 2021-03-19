@@ -346,10 +346,13 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     integer :: glc_nec
+    logical :: flds_vslsa
+    logical :: flds_vslsc
 
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_co2_dmsb, flds_wiso, glc_nec, &
-         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, nan_check_component_fields
+         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, flds_vslsa, flds_vslsc,               &
+         nan_check_component_fields
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -384,6 +387,8 @@ contains
        glc_nec   = 0
        ice_ncat  = 1
        seq_flds_i2o_per_cat = .false.
+       flds_vslsa = .false.
+       flds_vslsc = .false.
        nan_check_component_fields = .false.
 
        unitn = shr_file_getUnit()
@@ -411,6 +416,8 @@ contains
     call shr_mpi_bcast(glc_nec      , mpicom)
     call shr_mpi_bcast(ice_ncat     , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
+    call shr_mpi_bcast(flds_vslsa   , mpicom)
+    call shr_mpi_bcast(flds_vslsc   , mpicom)
     call shr_mpi_bcast(nan_check_component_fields, mpicom)
 
     call glc_elevclass_init(glc_nec)
@@ -2533,6 +2540,26 @@ contains
         units    = 'moles m-2 s-1'
         attname  = 'Faoo_fdms'
         call metadata_set(attname, longname, stdname, units)
+
+    endif
+
+    if (flds_vslsc) then
+
+       call seq_flds_add(a2x_states, "Sa_vslsprog")
+       call seq_flds_add(x2o_states, "Sa_vslsprog")
+       longname = 'Prognostic bromoform at the lowest model level'
+       stdname  = ''
+       units    = '1e-12 mol/mol'
+       attname  = 'Sa_vslsprog'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(o2x_fluxes, "Faoo_fvsls_ocn")
+       call seq_flds_add(x2a_fluxes, "Faoo_fvsls_ocn")
+       longname = 'Surface flux of bromoform from ocean'
+       stdname  = 'surface_upward_flux_of_bromoform_where_open_sea'
+       units    = 'moles m-2 s-1'
+       attname  = 'Faoo_fvsls_ocn'
+       call metadata_set(attname, longname, stdname, units)
 
     endif
 
