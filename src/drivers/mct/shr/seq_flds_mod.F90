@@ -2545,20 +2545,20 @@ contains
 
     if (flds_vslsc) then
 
-       call seq_flds_add(a2x_states, "Sa_vslsprog")
-       call seq_flds_add(x2o_states, "Sa_vslsprog")
+       call seq_flds_add(a2x_states, "Sa_brfprog")
+       call seq_flds_add(x2o_states, "Sa_brfprog")
        longname = 'Prognostic bromoform at the lowest model level'
        stdname  = ''
        units    = '1e-12 mol/mol'
-       attname  = 'Sa_vslsprog'
+       attname  = 'Sa_brfprog'
        call metadata_set(attname, longname, stdname, units)
 
-       call seq_flds_add(o2x_fluxes, "Faoo_fvsls_ocn")
-       call seq_flds_add(x2a_fluxes, "Faoo_fvsls_ocn")
+       call seq_flds_add(o2x_fluxes, "Faoo_fbrf_ocn")
+       call seq_flds_add(x2a_fluxes, "Faoo_fbrf_ocn")
        longname = 'Surface flux of bromoform from ocean'
        stdname  = 'surface_upward_flux_of_bromoform_where_open_sea'
        units    = 'moles m-2 s-1'
-       attname  = 'Faoo_fvsls_ocn'
+       attname  = 'Faoo_fbrf_ocn'
        call metadata_set(attname, longname, stdname, units)
 
     endif
