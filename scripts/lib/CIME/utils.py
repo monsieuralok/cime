@@ -9,6 +9,7 @@ import six
 from contextlib import contextmanager
 #pylint: disable=import-error
 from six.moves import configparser
+from distutils import file_util
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -106,16 +107,24 @@ class EnvironmentContext(object):
             else:
                 del os.environ[k]
 
-def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
+# This should be the go-to exception for CIME use. It's a subclass
+# of SystemExit in order suppress tracebacks, which users generally
+# hate seeing. It's a subclass of Exception because we want it to be
+# "catchable". If you are debugging CIME and want to see the stacktrace,
+# run your CIME command with the --debug flag.
+class CIMEError(SystemExit, Exception):
+    pass
+
+def expect(condition, error_msg, exc_type=CIMEError, error_prefix="ERROR:"):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
 
     >>> expect(True, "error1")
-    >>> expect(False, "error2")
+    >>> expect(False, "error2") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: error2
+    CIMEError: ERROR: error2
     """
     # Without this line we get a futurewarning on the use of condition below
     warnings.filterwarnings("ignore")
@@ -123,12 +132,9 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        try:
-            msg = str(error_prefix + " " + error_msg)
-        except UnicodeEncodeError:
-            msg = (error_prefix + " " + error_msg).encode('utf-8')
-        raise exc_type(msg)
 
+        msg = error_prefix + " " + error_msg
+        raise exc_type(msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -151,11 +157,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     False
     >>> check_name("mycase*mods")
     False
+    >>> check_name("/some/full/path/name/")
+    False
     """
 
     chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
+    if fullname.endswith('/'):
+        return False
     if fullpath:
         _, name = os.path.split(fullname)
     else:
@@ -171,13 +181,13 @@ def _read_cime_config_file():
     """
     READ the config file in ~/.cime, this file may contain
     [main]
-    CIME_MODEL=e3sm,cesm
+    CIME_MODEL=e3sm,cesm,ufs
     PROJECT=someprojectnumber
     """
     allowed_sections = ("main", "create_test")
 
     allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
-                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir", "cime_driver")
     allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
                               "test_root", "output_root", "baseline_root", "clean",
                               "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
@@ -244,13 +254,43 @@ def get_cime_root(case=None):
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
 
+def get_cime_default_driver():
+    driver = os.environ.get("CIME_DRIVER")
+    if driver:
+        logger.debug("Setting CIME_DRIVER={} from environment".format(driver))
+    else:
+        cime_config = get_cime_config()
+        if (cime_config.has_option('main','CIME_DRIVER')):
+            driver = cime_config.get('main','CIME_DRIVER')
+            if driver:
+                logger.debug("Setting CIME_driver={} from ~/.cime/config".format(driver))
+    if not driver:
+        model = get_model()
+        if model == "ufs":
+            driver = "nuopc"
+        else:
+            driver = "mct"
+    expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
+    return driver
+
+def get_all_cime_models():
+    modelsroot = os.path.join(get_cime_root(), "config")
+    models = []
+    for entry in os.listdir(modelsroot):
+        if os.path.isdir(os.path.join(modelsroot,entry)):
+            models.append(entry)
+    models.remove('xml_schemas')
+    return models
+
 def set_model(model):
     """
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    cime_models = get_all_cime_models()
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
+    expect(model in cime_models,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -259,16 +299,26 @@ def get_model():
     The CIME_MODEL env variable may or may not be set
 
     >>> os.environ["CIME_MODEL"] = "garbage"
+    >>> get_model() # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    CIMEError: ERROR: model garbage not recognized
     >>> del os.environ["CIME_MODEL"]
-    >>> set_model('rocky')
+    >>> set_model('rocky') # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    CIMEError: ERROR: model rocky not recognized
+    >>> set_model('e3sm')
     >>> get_model()
-    'rocky'
+    'e3sm'
     >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
-    if (model is not None):
+    cime_models = get_all_cime_models()
+    if model in cime_models:
         logger.debug("Setting CIME_MODEL={} from environment".format(model))
     else:
+        expect(model is None,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
         cime_config = get_cime_config()
         if (cime_config.has_option('main','CIME_MODEL')):
             model = cime_config.get('main','CIME_MODEL')
@@ -282,9 +332,12 @@ def get_model():
             srcroot = cime_config.get('main','SRCROOT')
         if srcroot is None:
             srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
-           or os.path.isdir(os.path.join(srcroot, "manage_externals")):
+        if os.path.isfile(os.path.join(srcroot, "Externals.cfg")):
             model = 'cesm'
+            with open(os.path.join(srcroot, "Externals.cfg")) as fd:
+                for line in fd:
+                    if re.search('fv3gfs', line):
+                        model = 'ufs'
         else:
             model = 'e3sm'
         # This message interfers with the correct operation of xmlquery
@@ -315,7 +368,21 @@ def _convert_to_fd(filearg, from_dir, mode="a"):
 
 _hack=object()
 
-def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
+def check_for_python(filepath, funcname=None):
+    is_python = is_python_executable(filepath)
+    has_function = True
+    if funcname is not None:
+        has_function = False
+        with open(filepath, 'r') as fd:
+            for line in fd.readlines():
+                if re.search(r"^def\s+{}\(".format(funcname), line) or re.search(r"^from.+import.+\s{}".format(funcname), line):
+                    has_function = True
+                    break
+
+    return is_python and has_function
+
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
+                   from_dir=None, timeout=None):
     """
     This code will try to import and run each cmd as a subroutine
     if that fails it will run it as a program in a seperate shell
@@ -336,6 +403,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         try:
             mod = imp.load_source(subname, cmd)
             logger.info("   Calling {}".format(cmd))
+            # Careful: logfile code is not thread safe!
             if logfile:
                 with open(logfile,"w") as log_fd:
                     with redirect_logger(log_fd, subname):
@@ -347,7 +415,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         except (SyntaxError, AttributeError) as _:
             pass # Need to try to run as shell command
 
-        except:
+        except Exception:
             if logfile:
                 with open(logfile, "a") as log_fd:
                     log_fd.write(str(sys.exc_info()[1]))
@@ -373,7 +441,8 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
     if logfile:
         fullcmd += " >& {} ".format(logfile)
 
-    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True, from_dir=from_dir)
+    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True,
+                              from_dir=from_dir, timeout=timeout)
     if output: # Will be empty if logfile
         logger.info(output)
 
@@ -388,7 +457,8 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         case.read_xml()
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+            arg_stdout=_hack, arg_stderr=_hack, env=None,
+            combine_output=False, timeout=None):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
@@ -409,32 +479,55 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
         arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
-        logger.info("RUN: {}".format(cmd))
+        logger.info("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
 
     if (input_str is not None):
         stdin = subprocess.PIPE
     else:
         stdin = None
+    if timeout:
+        with Timeout(timeout):
+            proc = subprocess.Popen(cmd,
+                                    shell=True,
+                                    stdout=arg_stdout,
+                                    stderr=arg_stderr,
+                                    stdin=stdin,
+                                    cwd=from_dir,
+                                    env=env)
 
-    proc = subprocess.Popen(cmd,
-                            shell=True,
-                            stdout=arg_stdout,
-                            stderr=arg_stderr,
-                            stdin=stdin,
-                            cwd=from_dir,
-                            env=env)
+            output, errput = proc.communicate(input_str)
+    else:
+        proc = subprocess.Popen(cmd,
+                                shell=True,
+                                stdout=arg_stdout,
+                                stderr=arg_stderr,
+                                stdin=stdin,
+                                cwd=from_dir,
+                                env=env)
 
-    output, errput = proc.communicate(input_str)
-    if output is not None:
-        try:
-            output = output.decode('utf-8').strip()
-        except AttributeError:
-            pass
-    if errput is not None:
-        try:
-            errput = errput.decode('utf-8').strip()
-        except AttributeError:
-            pass
+        output, errput = proc.communicate(input_str)
+
+    # In Python3, subprocess.communicate returns bytes. We want to work with strings
+    # as much as possible, so we convert bytes to string (which is unicode in py3) via
+    # decode. For python2, we do NOT want to do this since decode will yield unicode
+    # strings which are not necessarily compatible with the system's default base str type.
+    if not six.PY2:
+        if output is not None:
+            try:
+                output = output.decode('utf-8', errors='ignore')
+            except AttributeError:
+                pass
+        if errput is not None:
+            try:
+                errput = errput.decode('utf-8', errors='ignore')
+            except AttributeError:
+                pass
+
+    # Always strip outputs
+    if output:
+        output = output.strip()
+    if errput:
+        errput = errput.strip()
 
     stat = proc.wait()
     if six.PY2:
@@ -460,24 +553,26 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     return stat, output, errput
 
 def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
-                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+                    arg_stdout=_hack, arg_stderr=_hack, env=None,
+                    combine_output=False, timeout=None):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
 
     >>> run_cmd_no_fail('echo foo') == 'foo'
     True
-    >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
+    >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
+    CIMEError: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
 
     >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
     True
     >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
     True
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
+    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout,
+                                   arg_stderr, env, combine_output, timeout=timeout)
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
@@ -493,7 +588,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
             else:
                 errput = ""
 
-        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput.encode('utf-8'), os.getcwd() if from_dir is None else from_dir))
+        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir))
 
     return output
 
@@ -552,14 +647,14 @@ def parse_test_name(test_name):
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
-    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
-    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    CIMEError: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV
+    CIMEError: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV
     """
     rv = [None] * 7
     num_dots = test_name.count(".")
@@ -767,7 +862,7 @@ def match_any(item, re_list):
 
     return False
 
-def safe_copy(src_path, tgt_path):
+def safe_copy(src_path, tgt_path, preserve_meta=True):
     """
     A flexbile and safe copy routine. Will try to copy file and metadata, but this
     can fail if the current user doesn't own the tgt file. A fallback data-only copy is
@@ -777,6 +872,11 @@ def safe_copy(src_path, tgt_path):
 
     most of the complexity here is handling the case where the tgt_path file already
     exists. This problem does not exist for the tree operations so we don't need to wrap those.
+
+    preserve_meta toggles if file meta-data, like permissions, should be preserved. If you are
+    copying baseline files, you should be within a SharedArea context manager and preserve_meta
+    should be false so that the umask set up by SharedArea can take affect regardless of the
+    permissions of the src files.
     """
 
     tgt_path = os.path.join(tgt_path, os.path.basename(src_path)) if os.path.isdir(tgt_path) else tgt_path
@@ -790,14 +890,14 @@ def safe_copy(src_path, tgt_path):
         if not os.access(tgt_path, os.W_OK):
             if owner_uid == os.getuid():
                 # I am the owner, make writeable
-                os.chmod(st.st_mode | statlib.S_IWRITE)
+                os.chmod(tgt_path, st.st_mode | statlib.S_IWRITE)
             else:
                 # I won't be able to copy this file
                 raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))
 
         if owner_uid == os.getuid():
             # I am the owner, copy file contents, permissions, and metadata
-            shutil.copy2(src_path, tgt_path)
+            file_util.copy_file(src_path, tgt_path, preserve_mode=preserve_meta, preserve_times=preserve_meta)
         else:
             # I am not the owner, just copy file contents
             shutil.copyfile(src_path, tgt_path)
@@ -805,7 +905,12 @@ def safe_copy(src_path, tgt_path):
     else:
         # We are making a new file, copy file contents, permissions, and metadata.
         # This can fail if the underlying directory is not writable by current user.
-        shutil.copy2(src_path, tgt_path)
+        file_util.copy_file(src_path, tgt_path, preserve_mode=preserve_meta, preserve_times=preserve_meta)
+
+    # If src file was executable, then the tgt file should be too
+    st = os.stat(tgt_path)
+    if os.access(src_path, os.X_OK) and st.st_uid == os.getuid():
+        os.chmod(tgt_path, st.st_mode | statlib.S_IXUSR | statlib.S_IXGRP | statlib.S_IXOTH)
 
 def safe_recursive_copy(src_dir, tgt_dir, file_map):
     """
@@ -908,6 +1013,7 @@ def get_project(machobj=None):
                 project = line.rstrip()
                 if not project.startswith("#"):
                     break
+        if (project is not None):
             logger.info("Using project from .cesm_proj: " + project)
             cime_config.set('main','PROJECT',project)
             return project
@@ -921,7 +1027,7 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
-def get_charge_account(machobj=None):
+def get_charge_account(machobj=None, project=None):
     """
     Hierarchy for choosing CHARGE_ACCOUNT:
     1. Environment variable CHARGE_ACCOUNT
@@ -933,11 +1039,11 @@ def get_charge_account(machobj=None):
     >>> import CIME.XML.machines
     >>> machobj = CIME.XML.machines.Machines(machine="theta")
     >>> project = get_project(machobj)
-    >>> charge_account = get_charge_account(machobj)
+    >>> charge_account = get_charge_account(machobj, project)
     >>> project == charge_account
     True
     >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
-    >>> get_charge_account(machobj)
+    >>> get_charge_account(machobj, project)
     'ChargeAccount'
     >>> del os.environ["CHARGE_ACCOUNT"]
     """
@@ -960,7 +1066,7 @@ def get_charge_account(machobj=None):
             return charge_account
 
     logger.info("No charge_account info available, using value from PROJECT")
-    return get_project(machobj)
+    return project
 
 def find_files(rootdir, pattern):
     """
@@ -976,8 +1082,7 @@ def find_files(rootdir, pattern):
 
 
 def setup_standard_logging_options(parser):
-    helpfile = "{}.log".format(sys.argv[0])
-    helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
+    helpfile = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose) to file {}".format(helpfile))
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -1074,7 +1179,7 @@ def convert_to_type(value, type_str, vid=""):
         elif type_str == "integer":
             try:
                 value = int(eval(value))
-            except:
+            except Exception:
                 expect(False, "Entry {} was listed as type int but value '{}' is not valid int".format(vid, value))
 
         elif type_str == "logical":
@@ -1085,7 +1190,7 @@ def convert_to_type(value, type_str, vid=""):
         elif type_str == "real":
             try:
                 value = float(value)
-            except:
+            except Exception:
                 expect(False, "Entry {} was listed as type real but value '{}' is not valid real".format(vid, value))
 
         else:
@@ -1106,7 +1211,7 @@ def convert_to_unknown_type(value):
         # Attempt to convert to integer
         try:
             value = int(eval(value))
-        except:
+        except Exception:
             pass
         else:
             return value
@@ -1114,7 +1219,7 @@ def convert_to_unknown_type(value):
         # Attempt to convert to float
         try:
             value = float(value)
-        except:
+        except Exception:
             pass
         else:
             return value
@@ -1160,18 +1265,23 @@ def convert_to_seconds(time_str):
     """
     Convert time value in [[HH:]MM:]SS to seconds
 
+    We assume that XX:YY is likely to be HH:MM, not MM:SS
+
     >>> convert_to_seconds("42")
     42
     >>> convert_to_seconds("01:01:01")
     3661
+    >>> convert_to_seconds("01:01")
+    3660
     """
     components = time_str.split(":")
     expect(len(components) < 4, "Unusual time string: '{}'".format(time_str))
 
     components.reverse()
     result = 0
+    starting_exp = 1 if len(components) == 2 else 0
     for idx, component in enumerate(components):
-        result += int(component) * pow(60, idx)
+        result += int(component) * pow(60, idx + starting_exp)
 
     return result
 
@@ -1270,7 +1380,7 @@ def format_time(time_format, input_format, input_time):
     """
     input_fields = input_format.split("%")
     expect(input_fields[0] == input_time[:len(input_fields[0])],
-           "Failed to parse the input time; does not match the header string")
+           "Failed to parse the input time '{}'; does not match the header string '{}'".format(input_time, input_format))
     input_time = input_time[len(input_fields[0]):]
     timespec = {"H": None, "M": None, "S": None}
     maxvals = {"M": 60, "S": 60}
@@ -1532,6 +1642,9 @@ def _get_most_recent_lid_impl(files):
     >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160906_111212.gz']
     >>> _get_most_recent_lid_impl(files)
     ['20160905_111212', '20160906_111212']
+    >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160905_111212.gz']
+    >>> _get_most_recent_lid_impl(files)
+    ['20160905_111212']
     """
     results = []
     for item in files:
@@ -1542,7 +1655,7 @@ def _get_most_recent_lid_impl(files):
         else:
             logger.warning("Apparent model log file '{}' did not conform to expected name format".format(item))
 
-    return sorted(results)
+    return sorted(list(set(results)))
 
 def ls_sorted_by_mtime(path):
     ''' return list of path sorted by timestamp oldest first'''
@@ -1608,7 +1721,7 @@ def is_python_executable(filepath):
         with open(filepath, "rt") as f:
             try:
                 first_line = f.readline()
-            except:
+            except Exception:
                 pass
 
         return first_line is not None and first_line.startswith("#!") and "python" in first_line
@@ -1619,16 +1732,6 @@ def get_umask():
     os.umask(current_umask)
 
     return current_umask
-
-def copy_umask(src, dst):
-    """
-    Preserves all file metadata except making sure new file obeys umask
-    """
-    curr_umask = get_umask()
-    safe_copy(src, dst)
-    octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
-    dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
-    os.chmod(dst, octal_base - curr_umask)
 
 def stringify_bool(val):
     val = False if val is None else val
@@ -1656,18 +1759,20 @@ def indent_string(the_string, indent_level):
 def verbatim_success_msg(return_val):
     return return_val
 
+CASE_SUCCESS = "success"
+CASE_FAILURE = "error"
 def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
     try:
         rv = func()
-    except:
+    except BaseException:
         e = sys.exc_info()[1]
-        append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
+        append_case_status(phase, CASE_FAILURE, msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
         custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
-        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
+        append_case_status(phase, CASE_SUCCESS, msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 
@@ -1747,12 +1852,90 @@ def filter_unicode(unistr):
     """
     return "".join([i if ord(i) < 128 else ' ' for i in unistr])
 
-def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
+def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None, timeout=None):
     arg_logger.info(cmd)
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, timeout=timeout)
     arg_logger.info(output)
     arg_logger.info(errput)
     expect(stat == 0, filter_unicode(errput))
 
 def get_batch_script_for_job(job):
     return job if "st_archive" in job else "." + job
+
+def string_in_list(_string, _list):
+    """Case insensitive search for string in list
+    returns the matching list value
+    >>> string_in_list("Brack",["bar", "bracK", "foo"])
+    'bracK'
+    >>> string_in_list("foo", ["FFO", "FOO", "foo2", "foo3"])
+    'FOO'
+    >>> string_in_list("foo", ["FFO", "foo2", "foo3"])
+    """
+    for x in _list:
+        if _string.lower() == x.lower():
+            return x
+    return None
+
+def model_log(model, arg_logger, msg, debug_others=True):
+    if get_model() == model:
+        arg_logger.info(msg)
+    elif debug_others:
+        arg_logger.debug(msg)
+
+def get_htmlroot(machobj=None):
+    """Get location for test HTML output
+
+    Hierarchy for choosing CIME_HTML_ROOT:
+    0. Environment variable CIME_HTML_ROOT
+    1. File $HOME/.cime/config
+    2. config_machines.xml (if machobj provided)
+    """
+    htmlroot = os.environ.get("CIME_HTML_ROOT")
+    if htmlroot is not None:
+        logger.info("Using htmlroot from env CIME_HTML_ROOT: {}".format(htmlroot))
+        return htmlroot
+
+    cime_config = get_cime_config()
+    if cime_config.has_option("main", "CIME_HTML_ROOT"):
+        htmlroot = cime_config.get("main", "CIME_HTML_ROOT")
+        if htmlroot is not None:
+            logger.info("Using htmlroot from .cime/config: {}".format(htmlroot))
+            return htmlroot
+
+    if machobj is not None:
+        htmlroot = machobj.get_value("CIME_HTML_ROOT")
+        if htmlroot is not None:
+            logger.info("Using htmlroot from config_machines.xml: {}".format(htmlroot))
+            return htmlroot
+
+    logger.info("No htmlroot info available")
+    return None
+
+def get_urlroot(machobj=None):
+    """Get URL to htmlroot
+
+    Hierarchy for choosing CIME_URL_ROOT:
+    0. Environment variable CIME_URL_ROOT
+    1. File $HOME/.cime/config
+    2. config_machines.xml (if machobj provided)
+    """
+    urlroot = os.environ.get("CIME_URL_ROOT")
+    if urlroot is not None:
+        logger.info("Using urlroot from env CIME_URL_ROOT: {}".format(urlroot))
+        return urlroot
+
+    cime_config = get_cime_config()
+    if cime_config.has_option("main", "CIME_URL_ROOT"):
+        urlroot = cime_config.get("main", "CIME_URL_ROOT")
+        if urlroot is not None:
+            logger.info("Using urlroot from .cime/config: {}".format(urlroot))
+            return urlroot
+
+    if machobj is not None:
+        urlroot = machobj.get_value("CIME_URL_ROOT")
+        if urlroot is not None:
+            logger.info("Using urlroot from config_machines.xml: {}".format(urlroot))
+            return urlroot
+
+    logger.info("No urlroot info available")
+    return None

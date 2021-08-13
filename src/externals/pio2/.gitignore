@@ -3,7 +3,8 @@ html/
 *~
 \#*\#
 *.o
-*.in
+Makefile.in
+*.F90.in
 *.lo
 *.la
 Makefile
@@ -27,5 +28,5 @@ build/
 .libs/
 m4/
 *.nc
-
-
+*.log
+*.gz
