@@ -1393,9 +1393,11 @@ using a fortran linker.
   <CPPDEFS>
    <append> -D$(OS) </append>
   </CPPDEFS>
+<!--
   <FFLAGS>
    <append> -xavx2 -no-fma </append>
   </FFLAGS>
+-->
   <NETCDF_PATH>$(EBROOTNETCDFMINFORTRAN)</NETCDF_PATH>
   <PNETCDF_PATH>$(EBROOTPNETCDF)</PNETCDF_PATH>
   <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
