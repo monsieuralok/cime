@@ -741,24 +741,6 @@
      </values>
   </entry>
 
-<!-- +tht -->
-  <entry id="alb_cosz_avg">
-    <type>logical</type>
-    <category>control</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      logical parameter controlling whether a time-step average is
-      used for the computation of albedos in addition to the
-      computation for radiances:
-       =F -> CESM default
-       =T -> use cosz average over time-step also for albedos
-    </desc>
-    <values>
-      <value>$COSZ_AVG</value>
-    </values>
-  </entry>
-<!-- -tht -->
-
   <entry id="flux_convergence">
     <type>real</type>
     <category>control</category>

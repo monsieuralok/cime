@@ -34,7 +34,7 @@ module cime_comp_mod
   use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
   use shr_cal_mod,       only: shr_cal_ymds2rday_offset
-  use shr_orb_mod,       only: shr_orb_params, shr_orb_doalbavg !+tht added doalbavg
+  use shr_orb_mod,       only: shr_orb_params
   use shr_frz_mod,       only: shr_frz_freezetemp_init
   use shr_reprosum_mod,  only: shr_reprosum_setopts
   use shr_taskmap_mod,   only: shr_taskmap_write
@@ -490,8 +490,6 @@ module cime_comp_mod
   logical  :: reprosum_allow_infnan  ! setup reprosum, allow INF and NaN in summands
   real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
   logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
-
-  logical  :: shr_alb_cosz_avg       !+tht option for using cosz time-step average in albedos
 
   logical  :: output_perf = .false.  ! require timing data output for this pe
   logical  :: in_first_day = .true.  ! currently simulating first day
@@ -1065,7 +1063,6 @@ contains
          iop_mode=iop_mode                         , &
          aqua_planet=aqua_planet                   , &
          cpl_seq_option=cpl_seq_option             , &
-         alb_cosz_avg=shr_alb_cosz_avg             , & !+tht option for using time-step avg cosz for albedos
          drv_threading=drv_threading               , &
          do_histinit=do_histinit                   , &
          do_budgets=do_budgets                     , &
@@ -1118,8 +1115,6 @@ contains
          repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
-
-    call shr_orb_doalbavg(shr_alb_cosz_avg)           !+tht option for albedo cosz avg'ing
 
     ! Check cpl_seq_option
 
@@ -2110,17 +2105,14 @@ contains
 
           endif
 
-!+tht albedo cosz option
-          call seq_timemgr_EClockGetData( EClock_d, dtime=dtime) !+tht
           do exi = 1,num_inst_xao
              !tcx is this correct? relation between xao and frc for ifrad and ofrad
              efi = mod((exi-1),num_inst_frc) + 1
              eai = mod((exi-1),num_inst_atm) + 1
              xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
              a2x_ox => prep_ocn_get_a2x_ox()
-             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi), dtime) !+tht dtime
+             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
           enddo
-!-tht
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
@@ -3607,8 +3599,7 @@ contains
        eai = mod((exi-1),num_inst_atm) + 1
        xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
        a2x_ox => prep_ocn_get_a2x_ox()
-!tht albedo cosz option
-       call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi), dtime) !+tht dtime
+       call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
     enddo
     call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
 
