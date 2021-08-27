@@ -43,14 +43,11 @@
  * are using three-dimensional data. */
 #define NDIM 3
 
-/** The length of our sample data along each dimension. There will be
- * a total of 16 integers in each timestep of our data, and
- * responsibilty for writing and reading them will be spread between
- * all the processors used to run this example. */
-/**@{*/
+/** Length along x dimension. */
 #define X_DIM_LEN 20
+
+/** Length along y dimension. */
 #define Y_DIM_LEN 30
-/**@}*/
 
 /** The number of timesteps of data to write. */
 #define NUM_TIMESTEPS 6
@@ -92,7 +89,7 @@ char err_buffer[MPI_MAX_ERROR_STRING];
 int resultlen;
 
 /** The dimension names. */
-char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
+char dim_name[NDIM][PIO_MAX_NAME + 1] = {"timestep", "x", "y"};
 
 /** Length of the dimensions in the sample data. */
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
@@ -128,21 +125,30 @@ PIO_Offset chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 /**@}*/
 #endif /* HAVE_MPE */
 
-/** Some error codes for when things go wrong. */
-/**@{*/
+/** File error. */
 #define ERR_FILE 1
+/** File error. */
 #define ERR_DUMB 2
+/** Argument error. */
 #define ERR_ARG 3
+/** MPI error. */
 #define ERR_MPI 4
+/** MPI Type error. */
 #define ERR_MPITYPE 5
+/** Logging error. */
 #define ERR_LOGGING 6
+/** Update error. */
 #define ERR_UPDATE 7
+/** Calculation error. */
 #define ERR_CALC 8
+/** Count error. */
 #define ERR_COUNT 9
+/** Write error. */
 #define ERR_WRITE 10
+/** Swap error. */
 #define ERR_SWAP 11
+/** Init error. */
 #define ERR_INIT 12
-/**@}*/
 
 /** This will set up the MPE logging event numbers. 
  *
@@ -228,8 +234,8 @@ int check_file(int ntasks, char *filename) {
     nc_type xtype;    /**< NetCDF data type of this variable. */
     int ret;          /**< Return code for function calls. */
     int dimids[NDIM]; /**< Dimension ids for this variable. */
-    char my_dim_name[NC_MAX_NAME + 1]; /**< Name of the dimension. */
-    char var_name[NC_MAX_NAME + 1];    /**< Name of the variable. */
+    char my_dim_name[PIO_MAX_NAME + 1]; /**< Name of the dimension. */
+    char var_name[PIO_MAX_NAME + 1];    /**< Name of the variable. */
     size_t start[NDIM];                /**< Zero-based index to start read. */
     size_t count[NDIM];                /**< Number of elements to read. */
     int buffer[X_DIM_LEN];             /**< Buffer to read in data. */
@@ -359,7 +365,7 @@ int main(int argc, char* argv[])
      * (serial4 and parallel4) will be in netCDF-4/HDF5
      * format. All four can be read by the netCDF library, and all
      * will contain the same contents. */
-    char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME + 1] = {"example2_pnetcdf.nc",
+    char filename[NUM_NETCDF_FLAVORS][PIO_MAX_NAME + 1] = {"example2_pnetcdf.nc",
 							  "example2_classic.nc",
 							  "example2_serial4.nc",
 							  "example2_parallel4.nc"};
