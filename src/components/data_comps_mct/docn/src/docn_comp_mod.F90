@@ -62,7 +62,7 @@ module docn_comp_mod
   real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
-  integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
+  integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi,kifrac !+tht kifrac
   integer(IN)   :: kh,kqbot
   integer(IN)   :: index_lat, index_lon
   integer(IN)   :: kmask, kfrac ! frac and mask field indices of docn domain
@@ -253,6 +253,10 @@ CONTAINS
     klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn')
     ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
     kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
+
+!+tht
+    kifrac = mct_aVect_indexRA(x2o,'Si_ifrac')
+!-tht
 
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
@@ -581,7 +585,8 @@ CONTAINS
              o2x%rAttr(kq,n) = 0.0_R8
           enddo
        else   ! firstcall
-          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+         !tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz !tht: c'd out
+          tfreeze =  TkFrzsw !tht: avoid problems with bad salinity values
           do n = 1,lsize
              if (imask(n) /= 0) then
                 !--- pull out h from av for resuse below ---
@@ -600,7 +605,12 @@ CONTAINS
                 !--- compute ice formed or melt potential ---
                 o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
                 o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
-                somtp(n) = o2x%rAttr(kt,n)                                           ! save temp
+!+tht
+                if (o2x%rAttr(kifrac,n).gt.0.05_r8) then
+                  o2x%rAttr(kt,n)=tfreeze(n)
+                endif
+!-tht
+                somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
              endif
           enddo
        endif   ! firstcall
@@ -619,7 +629,8 @@ CONTAINS
              o2x%rAttr(kq,n) = 0.0_R8
           enddo
        else   ! firstcall
-          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+         !tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz !tht: c'd out
+          tfreeze =  TkFrzsw !tht: avoid problems with bad salinity values
           do n = 1,lsize
              !--- pull out h from av for resuse below ---
              hn = avstrm%rAttr(kh,n)
@@ -781,6 +792,14 @@ CONTAINS
     real(r8), parameter ::   latrad8    = 30._r8*pio180
     real(r8), parameter ::   lonrad     = 30._r8*pio180
 
+!+tht
+ ! sst flattification
+  !real(r8),parameter:: flatty=0.8_r8 ! 0.8*flat+0.2*control
+   real(r8),parameter:: flatty=0.5_r8 ! half-half = default "sstobs" for sst_option=3
+!-tht
+
+    !-------------------------------------------------------------------------------
+
     pi = SHR_CONST_PI
 
     ! convert xc and yc from degrees to radians
@@ -828,7 +847,7 @@ CONTAINS
              sst(i) = t0_min
           else
              tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
-             tmp = (2._r8 - tmp*tmp*tmp*tmp - tmp*tmp)*0.5_r8
+             tmp = (1._r8-tmp*tmp)*(1._r8+flatty*tmp*tmp) !+tht
              sst(i) = tmp*(t0_max - t0_min) + t0_min
           end if
        end do

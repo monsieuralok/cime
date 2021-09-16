@@ -138,6 +138,7 @@
       <value component="pop"                          >$SRCROOT/components/pop/</value>
       <value component="mom"                          >$SRCROOT/components/mom/</value>
       <value component="nemo"                         >$SRCROOT/components/nemo/</value>
+      <value component="blom"                          >$SRCROOT/components/blom/</value>
       <value component="docn"  comp_interface="mct"   >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/docn</value>
       <value component="docn"  comp_interface="nuopc" >$SRCROOT/components/cdeps/docn</value>
       <value component="socn"                         >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/socn</value>
@@ -270,6 +271,8 @@
       <value component="pop"       >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
       <value component="mom"       >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
       <value component="nemo"      >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
+      <value component="mpas-o"    >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
+      <value component="blom"      >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -291,6 +294,8 @@
       <value component="pop"       >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
       <value component="mom"       >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
       <value component="nemo"      >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
+      <value component="mpas-o"    >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
+      <value component="blom"      >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -361,6 +366,7 @@
       <value component="pop"       >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_pop.xml</value>
       <value component="mom"       >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_mom.xml</value>
       <value component="nemo"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_nemo.xml</value>
+      <value component="blom"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_blom.xml</value>
       <value component="rtm"       >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_rtm.xml</value>
       <value component="mosart"    >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_mosart.xml</value>
       <value component="mizuroute" >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_mizuRoute.xml</value>
@@ -393,6 +399,7 @@
       <value component="pop"       >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="mom"       >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="nemo"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
+      <value component="blom"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="datm" comp_interface="nuopc" >$SRCROOT/components/cdeps/datm/cime_config/testdefs/testmods_dirs</value>
       <value component="dice" comp_interface="nuopc" >$SRCROOT/components/cdeps/dice/cime_config/testdefs/testmods_dirs</value>
       <value component="dlnd" comp_interface="nuopc" >$SRCROOT/components/cdeps/dlnd/cime_config/testdefs/testmods_dirs</value>
@@ -421,6 +428,8 @@
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
       <value component="nemo"     >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
+      <value component="mpas-o"   >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
+      <value component="blom"     >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

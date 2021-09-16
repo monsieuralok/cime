@@ -122,7 +122,8 @@ def parse_command_line(args, description):
         args.use_old = False
         args.ninja   = False
 
-    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.ninja, args.dry_run
+#   return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.ninja, args.dry_run
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, 0, args.use_old, args.ninja, args.dry_run
 
 ###############################################################################
 def _main_func(description):

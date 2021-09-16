@@ -2751,8 +2751,6 @@ This allows using a different mpirun command to launch unit tests
     </environment_variables>
   </machine>
 
-<!-- machine settings for vilje are not updated and not functional -->
-<!--
   <machine MACH="vilje">
     <DESC>SGI Altix ICE X, 16-way nodes, dual eight-core Xeon E5-2670@2.60GHz, 32 GiB per node</DESC>
     <OS>LINUX</OS>
@@ -2762,6 +2760,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT>/work/shared/noresm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>UNSET</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/../archive/$CASE</DOUT_S_ROOT>
+    <!--DOUT_L_MSROOT>/norstore_osl/projects/NS2345K/noresm/cases/$CASE</DOUT_L_MSROOT-->
     <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -2802,10 +2801,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="decfort_dump_flag">Y</env>
     </environment_variables>
   </machine>
--->
 
-<!-- machine settings for fram: no working software stack found -->
-<!--
   <machine MACH="fram">
     <DESC>Lenovo NeXtScale M5, 32-way nodes, dual 16-core Xeon E5-2683@2.10GHz, 64 GiB per node, os is Linux, batch system is SLURM</DESC>
     <OS>LINUX</OS>
@@ -2815,6 +2811,9 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT>/cluster/shared/noresm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>UNSET</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/users/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_ROOT>/projects/NS2345K/noresm/cases</DOUT_L_ROOT>
+    <DOUT_L_HOSTNAME>login.nird.sigma2.no</DOUT_L_HOSTNAME>
+    <!--DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT-->
     <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -2838,11 +2837,17 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="python">/cluster/software/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-      <modules> 
-        <command name="purge"> - - force [note extra spaces] </command> 
+      <modules>
+        <command name="purge">--force</command>
         <command name="load">StdEnv</command>
-        <command name="load">intel/2020a</command>
-        <command name="load">netCDF-Fortran/4.5.2-iimpi-2020a</command>
+        <!-- djlo Deactivated THT settings -->  
+        <!--command name="load">intel/2016a</command-->
+        <!--command name="load">netCDF-Fortran/4.4.3-intel-2016a</command-->
+        <!--command name="load">PnetCDF/1.8.1-intel-2016a</command-->
+        <!--command name="load">CMake/3.5.2-intel-2016a</command-->
+        <command name="load">intel/2018a</command>
+        <command name="load">netCDF-Fortran/4.4.4-intel-2018a-HDF5-1.8.19</command>
+        <command name="load">PnetCDF/1.8.1-intel-2018a</command>
         <command name="load">CMake/3.9.1</command>
       </modules>
     </module_system>
@@ -2855,7 +2860,6 @@ This allows using a different mpirun command to launch unit tests
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
   </machine>
--->
 
   <machine MACH="betzy">
     <DESC> BullSequana XH2000 AMD® Epyc™ "Rome" 2.2GHz, 128-way nodes, os is Linux, batch system is SLURM</DESC>
@@ -2863,13 +2867,15 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel</COMPILERS>
     <MPILIBS compiler="intel" >openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/cluster/work/users/$USER/noresm</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/cluster/shared/noresm/inputdata/thomas</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>/cluster/shared/noresm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>UNSET</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/users/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_ROOT>/projects/NS2345K/noresm/cases</DOUT_L_ROOT>
+    <DOUT_L_HOSTNAME>login.nird.sigma2.no</DOUT_L_HOSTNAME>
     <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm_nor</BATCH_SYSTEM>
     <SUPPORTED_BY>noresmCommunity</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -2878,7 +2884,7 @@ This allows using a different mpirun command to launch unit tests
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default">
-      <executable>mpirun -bind-to core</executable>
+      <executable>srun</executable>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/cluster/installations/lmod/lmod/init/perl</init_path>
@@ -2890,6 +2896,7 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules compiler="intel">
+        <command name="--quiet restore">system</command>
         <command name="load">StdEnv</command>
         <command name="load">intel/2020a</command>
         <command name="load">netCDF-Fortran/4.5.2-iompi-2020a</command>
@@ -2908,7 +2915,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="OMPI_MCA_coll_hcoll_priority">95</env>
       <env name="OMPI_MCA_coll_hcoll_np">8</env>
       <env name="HCOLL_MAIN_IB">mlx5_0:1</env>
-      <env name="HCOLL_ENABLE_MCAST">1</env>
       <env name="HCOLL_ENABLE_MCAST_ALL">1</env>
     </environment_variables>
     <resource_limits>
@@ -2916,8 +2922,6 @@ This allows using a different mpirun command to launch unit tests
     </resource_limits>
   </machine>
 
-<!-- machine settings for vilje are not updated and not functional -->
-<!--
   <machine MACH="nebula">
     <DESC>Intel Skylake 6130 32 core nodes 96G RAM OPA network</DESC>
     <OS>LINUX</OS>
@@ -2927,6 +2931,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT>/nobackup/forsk/noresm/inputdata/</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>UNSET</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/forsk/$USER/archive/$CASE</DOUT_S_ROOT>
+    <!--DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT-->
     <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -2951,7 +2956,7 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="python">/software/sse/manual/lmod/7.7/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
-        <command name="purge"> - - force [note extra spaces] </command>
+        <command name="purge">--force</command>
         <command name="load">nsc/.1.0</command>
         <command name="load">mpprun/4.0</command>
         <command name="load">buildenv-intel/2018a-eb</command>
@@ -2964,7 +2969,32 @@ This allows using a different mpirun command to launch unit tests
       <env name="decfort_dump_flag">Y</env>
     </environment_variables>
   </machine>
--->
+
+  <machine MACH="tetralith">
+    <DESC>Tetralith Linux Cluster (NSC, Sweden), 32 pes/node, batch system SLURM</DESC>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>snic2019-1-2</PROJECT>
+    <CHARGE_ACCOUNT>bolinc</CHARGE_ACCOUNT>
+    <CIME_OUTPUT_ROOT>/proj/$CHARGE_ACCOUNT/users/$ENV{USER}/noresm2</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/proj/cesm_input-data/inputdata/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/proj/cesm_input-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>snic</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpprun</executable>
+    </mpirun>
+    <module_system type="none">
+    </module_system>
+  </machine>
 
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/cesm.exe </default_run_exe>

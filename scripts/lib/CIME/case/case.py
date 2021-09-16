@@ -1034,7 +1034,7 @@ class Case(object):
 
         if not test and not run_unsupported and self._cime_model == "cesm":
             if grid_name in science_support:
-                logger.info("\nThis is a CESM scientifically supported compset at this resolution.\n")
+                logger.info("\nThis is a CESM or NorESM scientifically supported compset at this resolution.\n")
             else:
                 self._check_testlists(compset_alias, grid_name, files)
 
@@ -1181,7 +1181,9 @@ class Case(object):
                     os.path.join(toolsdir, "check_case"),
                     os.path.join(toolsdir, "xmlchange"),
                     os.path.join(toolsdir, "xmlquery"),
-                    os.path.join(toolsdir, "pelayout"))
+                    os.path.join(toolsdir, "pelayout"),
+                    os.path.join(toolsdir, "noresm2netcdf4.sh"),
+                    os.path.join(toolsdir, "noresm_l_archive.bash"))
         try:
             for exefile in exefiles:
                 destfile = os.path.join(self._caseroot,os.path.basename(exefile))
@@ -1315,6 +1317,14 @@ directory, NOT in this subdirectory."""
                 note = "This component includes user_mods {}".format(user_mods)
                 append_status(note, "README.case", caseroot=self._caseroot)
                 logger.info(note)
+        gittag = run_cmd_no_fail('git remote -v',from_dir=self.get_value("CIMEROOT"))
+        gitbranch = run_cmd_no_fail('git branch -vv',from_dir=self.get_value("CIMEROOT"))
+        gitlog = run_cmd_no_fail('git log -n 1',from_dir=self.get_value("CIMEROOT"))
+        append_status("INFORMATION ABOUT YOUR GIT VERSION CONTROL SYSTEM :","README.case", caseroot=self._caseroot)
+        append_status("remote branch:{}".format(gittag),"README.case", caseroot=self._caseroot)
+        append_status("git branch:{}".format(gitbranch),"README.case", caseroot=self._caseroot)
+        append_status("git log:{}".format(gitlog.encode('utf8')),"README.case", caseroot=self._caseroot)
+#
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()

@@ -783,7 +783,6 @@ contains
     logical             :: update_alb           ! was albedo updated
     logical,save        :: first_call = .true.
     real(r8)            :: dtavg                !+tht time step
-
     !
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !

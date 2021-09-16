@@ -198,7 +198,7 @@ class EnvBatch(EnvBase):
         if ext.startswith('.'):
             ext = ext[1:]
         overrides["job_id"] = ext + '.' + case.get_value("CASE")
-        if "pleiades" in case.get_value("MACH"):
+        if "pleiades" or "vilje" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
             overrides["job_id"] = overrides["job_id"][:15]
         overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
@@ -364,6 +364,13 @@ class EnvBatch(EnvBase):
                             prefix = directive_prefix if custom_prefix is None else custom_prefix
 
                             result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
+
+                    if "fram" in case.get_value("MACH") and job == "case.st_archive":
+                        directive = "--qos=preproc"
+                        result.append("{} {}".format(directive_prefix, directive))
+                    if "betzy" in case.get_value("MACH") and job == "case.st_archive":
+                        directive = "--mem-per-cpu=30GB"
+                        result.append("{} {}".format(directive_prefix, directive))
 
         return "\n".join(result)
 

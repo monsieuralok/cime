@@ -361,12 +361,13 @@ contains
     logical :: flds_co2b
     logical :: flds_co2c
     logical :: flds_co2_dmsa
+    logical :: flds_co2_dmsb
     logical :: flds_bgc_oi
     logical :: flds_wiso
     integer :: glc_nec
 
     namelist /seq_cplflds_inparm/  &
-         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
+         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_co2_dmsb, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat
 
@@ -397,6 +398,7 @@ contains
        flds_co2b = .false.
        flds_co2c = .false.
        flds_co2_dmsa = .false.
+       flds_co2_dmsb = .false.
        flds_bgc_oi   = .false.
        flds_wiso = .false.
        glc_nec   = 0
@@ -424,6 +426,7 @@ contains
     call shr_mpi_bcast(flds_co2b    , mpicom)
     call shr_mpi_bcast(flds_co2c    , mpicom)
     call shr_mpi_bcast(flds_co2_dmsa, mpicom)
+    call shr_mpi_bcast(flds_co2_dmsb, mpicom)
     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
     call shr_mpi_bcast(flds_wiso    , mpicom)
     call shr_mpi_bcast(glc_nec      , mpicom)
@@ -2762,6 +2765,7 @@ contains
 
        call seq_flds_add(a2x_states, "Sa_co2prog")
        call seq_flds_add(x2l_states, "Sa_co2prog")
+       call seq_flds_add(x2o_states, "Sa_co2prog")
        longname = 'Prognostic CO2 at the lowest model level'
        stdname  = ''
        units    = '1e-6 mol/mol'
@@ -2799,6 +2803,33 @@ contains
        units    = 'moles m-2 s-1'
        attname  = 'Faoo_fco2_ocn'
        call metadata_set(attname, longname, stdname, units)
+
+     else if (flds_co2_dmsb) then
+
+        call seq_flds_add(a2x_states, "Sa_co2prog")
+        call seq_flds_add(x2l_states, "Sa_co2prog")
+        longname = 'Prognostic CO2 at the lowest model level'
+        stdname  = ''
+        units    = '1e-6 mol/mol'
+        attname  = 'Sa_co2prog'
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(a2x_states, "Sa_co2diag")
+        call seq_flds_add(x2l_states, "Sa_co2diag")
+        call seq_flds_add(x2o_states, "Sa_co2diag")
+        longname = 'Diagnostic CO2 at the lowest model level'
+        stdname  = ''
+        units    = '1e-6 mol/mol'
+        attname  = 'Sa_co2diag'
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(o2x_fluxes, "Faoo_fdms_ocn")
+        call seq_flds_add(x2a_fluxes, "Faoo_fdms_ocn")
+        longname = 'Surface flux of DMS'
+        stdname  = 'surface_upward_flux_of_dimethyl_sulfide'
+        units    = 'moles m-2 s-1'
+        attname  = 'Faoo_fdms'
+        call metadata_set(attname, longname, stdname, units)
 
     endif
 
