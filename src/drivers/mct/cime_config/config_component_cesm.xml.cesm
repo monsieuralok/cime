@@ -426,26 +426,6 @@
     </desc>
   </entry>
 
-  <entry id="COSZ_AVG">
-    <type>char</type>
-    <valid_values>.true.,.false.</valid_values>
-    <default_value>.false.</default_value>
-    <values match="last">
-      <value compset="_CAM5%PTAEROUPD1">.true.</value>
-      <value compset="_CAM60%PTAERO">.true.</value>
-      <value compset="_CAM54%PTAERO">.true.</value>
-      <value compset="_CAM5%NUDGEPTAEROUPD1">.true.</value>
-      <value compset="_CAM54%NUDGEPTAERO">.true.</value>
-      <value compset="_CAM60%NUDGEPTAERO">.true.</value>
-      <value compset="_MICOM">.true.</value>
-    </values>
-    <group>run_component_cpl</group>
-    <file>env_run.xml</file>
-    <desc>
-      Default is false and true for N* cpmpsets, controls value of ALB_COSZ_AVG
-    </desc>
-  </entry>
-
   <entry id="CPL_EPBAL">
     <type>char</type>
     <valid_values>off,ocn</valid_values>
