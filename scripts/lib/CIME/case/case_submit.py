@@ -87,6 +87,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         except:
             env_batch_has_changed = True
 
+    env_batch_has_changed = False
     if batch_system != "none" and env_batch_has_changed and not external_workflow:
         # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
         logger.warning(\
@@ -126,6 +127,7 @@ manual edits to these file will be lost!
         except CIMEError:
             env_batch_has_changed = True
 
+        env_batch_has_changed = False
         if env_batch.get_batch_system_type() != "none" and env_batch_has_changed:
             # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
             logger.warning(\
