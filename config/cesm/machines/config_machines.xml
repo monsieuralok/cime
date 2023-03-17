@@ -2340,7 +2340,7 @@ This allows using a different mpirun command to launch unit tests
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default">
-      <executable>mpirun -bind-to core</executable>
+      <executable>srun</executable>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/cluster/installations/lmod/lmod/init/perl</init_path>
@@ -2357,6 +2357,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">intel/2020a</command>
         <command name="load">netCDF-Fortran/4.5.2-iompi-2020a</command>
         <command name="load">iompi/2020a</command>
+        <command name="load">NCO/4.9.7-iomkl-2020a</command>
         <command name="load">CMake/3.12.1</command>
       </modules>
     </module_system>
@@ -2371,7 +2372,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="OMPI_MCA_coll_hcoll_priority">95</env>
       <env name="OMPI_MCA_coll_hcoll_np">8</env>
       <env name="HCOLL_MAIN_IB">mlx5_0:1</env>
-      <env name="HCOLL_ENABLE_MCAST">1</env>
+      <!--env name="HCOLL_ENABLE_MCAST">1</env-->
       <env name="HCOLL_ENABLE_MCAST_ALL">1</env>
     </environment_variables>
     <resource_limits>
