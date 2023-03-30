@@ -2359,7 +2359,8 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">netCDF-Fortran/4.5.2-iompi-2020a</command>
         <command name="load">iompi/2020a</command>
         <command name="load">NCO/4.9.7-iomkl-2020a</command>
-        <command name="load">CMake/3.12.1</command>
+        <command name="load">CMake/3.12.1</command> 
+        <command name="load">PnetCDF/1.12.1-iompi-2020a</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -2374,6 +2375,10 @@ This allows using a different mpirun command to launch unit tests
       <env name="OMPI_MCA_coll_hcoll_np">8</env>
       <env name="HCOLL_MAIN_IB">mlx5_0:1</env>
       <env name="HCOLL_ENABLE_MCAST_ALL">1</env>
+      <env name="OMPI_MCA_io">ompio</env>
+      <env name="OMPI_MCA_fs_lustre_stripe_size">1048576</env>
+      <env name="OMPI_MCA_fs_lustre_stripe_width">8</env>
+      <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
