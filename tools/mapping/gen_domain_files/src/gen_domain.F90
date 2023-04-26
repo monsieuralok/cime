@@ -26,7 +26,6 @@ program fmain
   integer :: n                      ! index
   integer :: set_fv_pole_yc         ! fix pole ycs on this grid [0,1,2]
   integer :: nargs                  ! number of arguments
-  integer, external  :: iargc       ! number of arguments function
   character(LEN=512) :: arg         ! input argument
   character(LEN=512) :: cmdline     ! input command line
   character(LEN=512) :: fmap        ! file name ( input nc file)
@@ -869,7 +868,7 @@ logical function var_exists(fid, var_name)
    integer, intent(in) :: fid
    character(len=*), intent(in) :: var_name
    integer :: error_code, vid
-   
+
    error_code = nf_inq_varid(fid, var_name, vid)
    if (error_code == NF_NOERR) then
       var_exists = .true.
