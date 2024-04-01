@@ -23,18 +23,10 @@ class TestCaseSubmit(unittest.TestCase):
     def test_check_case(self):
         case = mock.MagicMock()
         # get_value arguments TEST, COMP_WAV, COMP_INTERFACE, BUILD_COMPLETE
-        case.get_value.side_effect = [False, "", "", True]
+        case.get_value.side_effect = ["", "", True]
         case_submit.check_case(case, chksum=True)
 
         case.check_all_input_data.assert_called_with(chksum=True)
-
-    def test_check_case_test(self):
-        case = mock.MagicMock()
-        # get_value arguments TEST, COMP_WAV, COMP_INTERFACE, BUILD_COMPLETE
-        case.get_value.side_effect = [True, "", "", True]
-        case_submit.check_case(case, chksum=True)
-
-        case.check_all_input_data.assert_not_called()
 
     @mock.patch("CIME.case.case_submit.lock_file")
     @mock.patch("CIME.case.case_submit.unlock_file")
@@ -86,6 +78,7 @@ class TestCaseSubmit(unittest.TestCase):
                 batch_args=None,
                 workflow=True,
                 chksum=True,
+                dryrun=False,
             )
 
 
@@ -232,14 +225,14 @@ class TestCase(unittest.TestCase):
                     self.srcroot,
                     "A",
                     "f19_g16_rx1",
-                    machine_name="cori-haswell",
+                    machine_name="perlmutter",
                 )
 
                 # Check that they're all called
                 configure.assert_called_with(
                     "A",
                     "f19_g16_rx1",
-                    machine_name="cori-haswell",
+                    machine_name="perlmutter",
                     project=None,
                     pecount=None,
                     compiler=None,
@@ -309,14 +302,14 @@ class TestCase(unittest.TestCase):
                     self.srcroot,
                     "A",
                     "f19_g16_rx1",
-                    machine_name="cori-haswell",
+                    machine_name="perlmutter",
                 )
 
                 # Check that they're all called
                 configure.assert_called_with(
                     "A",
                     "f19_g16_rx1",
-                    machine_name="cori-haswell",
+                    machine_name="perlmutter",
                     project=None,
                     pecount=None,
                     compiler=None,
