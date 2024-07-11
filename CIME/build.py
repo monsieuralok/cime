@@ -20,7 +20,7 @@ from CIME.utils import (
     import_from_file,
 )
 from CIME.config import Config
-from CIME.locked_files import lock_file, unlock_file
+from CIME.locked_files import lock_file, unlock_file, check_lockedfiles
 from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
@@ -338,6 +338,7 @@ def _build_model(
     thread_bad_results = []
     libroot = os.path.join(exeroot, "lib")
     bldroot = None
+    bld_threads = []
     for model, comp, nthrds, _, config_dir in complist:
         if buildlist is not None and model.lower() not in buildlist:
             continue
@@ -391,12 +392,13 @@ def _build_model(
             ),
         )
         t.start()
+        bld_threads.append(t)
 
         logs.append(file_build)
 
     # Wait for threads to finish
-    while threading.active_count() > 1:
-        time.sleep(1)
+    for bld_thread in bld_threads:
+        bld_thread.join()
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -1026,7 +1028,7 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
             run_cmd_no_fail(clean_cmd)
 
     # unlink Locked files directory
-    unlock_file("env_build.xml")
+    unlock_file("env_build.xml", case.get_value("CASEROOT"))
 
     # reset following values in xml files
     case.set_value("SMP_BUILD", str(0))
@@ -1076,7 +1078,7 @@ def _case_build_impl(
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    case.check_lockedfiles(skip="env_batch")
+    check_lockedfiles(case, skip="env_batch")
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
@@ -1292,7 +1294,7 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
 
         case.flush()
 
-        lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
+        lock_file("env_build.xml", case.get_value("CASEROOT"))
 
 
 ###############################################################################
