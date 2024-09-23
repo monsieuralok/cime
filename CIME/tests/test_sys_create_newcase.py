@@ -74,7 +74,7 @@ class TestCreateNewcase(base.BaseTestCase):
         # on systems (like github workflow) that do not have batch, set this for the next test
         if batch_system == "none":
             self.run_cmd_assert_result(
-                './xmlchange --subgroup case.run BATCH_COMMAND_FLAGS="-q \$JOB_QUEUE"',
+                r'./xmlchange --subgroup case.run BATCH_COMMAND_FLAGS="-q \$JOB_QUEUE"',
                 from_dir=testdir,
             )
 
@@ -368,23 +368,13 @@ class TestCreateNewcase(base.BaseTestCase):
         cls._testdirs.append(testdir)
 
         if self._config.test_mode == "cesm":
-            if utils.get_cime_default_driver() == "nuopc":
-                pesfile = os.path.join(
-                    utils.get_src_root(),
-                    "components",
-                    "cmeps",
-                    "cime_config",
-                    "config_pes.xml",
-                )
-            else:
-                pesfile = os.path.join(
-                    utils.get_src_root(),
-                    "components",
-                    "cpl7",
-                    "driver",
-                    "cime_config",
-                    "config_pes.xml",
-                )
+            pesfile = os.path.join(
+                utils.get_src_root(),
+                "components",
+                "cmeps",
+                "cime_config",
+                "config_pes.xml",
+            )
         else:
             pesfile = os.path.join(
                 utils.get_src_root(), "driver-mct", "cime_config", "config_pes.xml"
