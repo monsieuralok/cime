@@ -32,6 +32,7 @@ class EnvBatch(EnvBase):
         initialize an object interface to file env_batch.xml in the case directory
         """
         self._batchtype = None
+        self._hidden_batch_script = {}
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
         schema = os.path.join(utils.get_schema_path(), "env_batch.xsd")
@@ -257,7 +258,31 @@ class EnvBatch(EnvBase):
             subgroup=job,
             overrides=overrides,
         )
-        output_name = get_batch_script_for_job(job) if outfile is None else outfile
+        env_workflow = case.get_env("workflow")
+
+        hidden = env_workflow.get_value("hidden", subgroup=job)
+        # case.st_archive is not hidden for backward compatibility
+        if (
+            (job != "case.st_archive" and hidden is None)
+            or hidden == "True"
+            or hidden == "true"
+        ):
+            self._hidden_batch_script[job] = True
+        else:
+            self._hidden_batch_script[job] = False
+
+        output_name = (
+            get_batch_script_for_job(
+                job,
+                hidden=(
+                    self._hidden_batch_script[job]
+                    if job in self._hidden_batch_script
+                    else None
+                ),
+            )
+            if outfile is None
+            else outfile
+        )
         logger.info("Creating file {}".format(output_name))
         with open(output_name, "w") as fd:
             fd.write(output_text)
@@ -745,7 +770,17 @@ class EnvBatch(EnvBase):
         alljobs = [
             j
             for j in alljobs
-            if os.path.isfile(os.path.join(self._caseroot, get_batch_script_for_job(j)))
+            if os.path.isfile(
+                os.path.join(
+                    self._caseroot,
+                    get_batch_script_for_job(
+                        j,
+                        hidden=self._hidden_batch_script[j]
+                        if j in self._hidden_batch_script
+                        else None,
+                    ),
+                )
+            )
         ]
 
         startindex = 0
@@ -919,7 +954,6 @@ class EnvBatch(EnvBase):
         resubmit_immediate=False,
         workflow=True,
     ):
-
         if not dry_run:
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -1072,7 +1106,14 @@ class EnvBatch(EnvBase):
                 batchsubmit,
                 submitargs,
                 batchredirect,
-                get_batch_script_for_job(job),
+                get_batch_script_for_job(
+                    job,
+                    hidden=(
+                        self._hidden_batch_script[job]
+                        if job in self._hidden_batch_script
+                        else None
+                    ),
+                ),
             )
         elif batch_env_flag:
             sequence = (
@@ -1080,19 +1121,39 @@ class EnvBatch(EnvBase):
                 submitargs,
                 run_args,
                 batchredirect,
-                get_batch_script_for_job(job),
+                os.path.join(
+                    self._caseroot,
+                    get_batch_script_for_job(
+                        job,
+                        hidden=(
+                            self._hidden_batch_script[job]
+                            if job in self._hidden_batch_script
+                            else None
+                        ),
+                    ),
+                ),
             )
         else:
             sequence = (
                 batchsubmit,
                 submitargs,
                 batchredirect,
-                get_batch_script_for_job(job),
+                os.path.join(
+                    self._caseroot,
+                    get_batch_script_for_job(
+                        job,
+                        hidden=(
+                            self._hidden_batch_script[job]
+                            if job in self._hidden_batch_script
+                            else None
+                        ),
+                    ),
+                ),
                 run_args,
             )
 
         submitcmd = " ".join(s.strip() for s in sequence if s is not None)
-        if submitcmd.startswith("ssh"):
+        if submitcmd.startswith("ssh") and "$CASEROOT" in submitcmd:
             # add ` before cd $CASEROOT and at end of command
             submitcmd = submitcmd.replace("cd $CASEROOT", "'cd $CASEROOT") + "'"
 
@@ -1385,7 +1446,6 @@ class EnvBatch(EnvBase):
             template = case.get_resolved_value(
                 env_workflow.get_value("template", subgroup=job)
             )
-
             if os.path.isabs(template):
                 input_batch_script = template
             else:
