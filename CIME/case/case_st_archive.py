@@ -1077,6 +1077,20 @@ def case_st_archive(
                 )
             else:
                 self.submit(resubmit=True)
+    if self.get_value('COMPRESS_ARCHIVE_FILES'):
+        archiveroot = self.get_value('DOUT_S_ROOT')
+        convert='/noresm2netcdf4.sh'
+        cmd_convert=caseroot+convert
+        cmd="%s %s" %(cmd_convert,archiveroot)
+        logger.info("cmd={}".format(cmd))
+        run_cmd_no_fail(cmd)
+
+    if self.get_value('COPY_CASE_FOLDER'):
+        archiveroot = self.get_value('DOUT_S_ROOT')
+        sync='rsync -avh'
+        cmd="%s %s %s %s" %(sync,caseroot, archiveroot+'/case','>'+archiveroot+'/case.log')
+        logger.info("cmd={}".format(cmd))
+        run_cmd_no_fail(cmd)
 
     return True
 
