@@ -579,6 +579,25 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="olivia" type="slurm_nor">
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive> --ntasks={{ total_tasks }}</directive>
+      <directive> --export=ALL</directive>
+    </directives> 
+    <directives queue = "normal">
+      <directive> --partition=normal</directive>
+      <directive> --mem-per-cpu=2700M</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemin="1" nodemax="288" default="true">normal</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="betzy" type="slurm_nor">
     <batch_submit>sbatch</batch_submit>
     <submit_args>
